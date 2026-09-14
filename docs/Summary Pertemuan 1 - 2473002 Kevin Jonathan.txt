@@ -1,0 +1,14 @@
+Minta mahasiswa menulis exit ticket:
+1. Lapisan mana yang paling saya pahami?
+2. Lapisan mana yang masih saya campuradukkan?
+3. Bukti apa yang membuat sebuah sistem layak disebut “cerdas” dan bertanggung jawab?
+
+1. Lapisan teknis yang dapat langsung dieksekusi dan dilihat hasilnya.
+2. Fungsi spesifik dari masing-masing lapisan dalam alur data-BI-ML-LLM-manusia tersebut.
+3. No 3 :
+- Sistem perangkat lunak tersebut harus dapat berjalan secara penuh atau end-to-end.  
+- Pembuatnya mampu memberikan penjelasan lapisan yang benar.  
+- Terdapat kesadaran risiko yang spesifik pada sistem, bukan sekadar kesadaran risiko yang umum.  
+- Pembuatnya mampu menyebutkan secara spesifik satu risiko yang akan terjadi apabila salah satu lapisan dalam alur tersebut dilewati.
+
+Tutup dengan pengantar: minggu depan mahasiswa tidak langsung memilih algoritma; mereka belajar mengubah dataset menjadi masalah yang sah dan terukur.
