@@ -1,0 +1,180 @@
+---
+title: "Prediksi Customer Churn Berbasis Business Intelligence, Machine Learning, dan LLM"
+subtitle: "Laporan Proyek Teknologi Cerdas — Jalur Reproduce"
+author:
+  - name: "Kevin Jonathan"
+    affiliation: "Teknologi Cerdas"
+date: "2026-09-21"
+lang: id
+format:
+  pdf:
+    documentclass: article
+    number-sections: true
+    geometry:
+      - margin=25mm
+    toc: true
+  html:
+    toc: true
+    number-sections: true
+execute:
+  echo: false
+  warning: false
+---
+
+# Abstrak {.unnumbered}
+
+Proyek ini membangun alur analitik untuk membantu manajer bisnis mengidentifikasi pelanggan e-commerce yang berisiko berhenti bertransaksi (*customer churn*). Data terdiri atas 8.000 pelanggan, 25.000 transaksi, 140 ringkasan produk, dan 75 agregat bulanan. Setelah validasi, pembersihan, serta rekayasa fitur, data pelanggan dibagi secara *stratified* menjadi 6.400 data latih dan 1.600 data uji. Model Random Forest dengan pembobotan kelas seimbang mencapai akurasi 0,863, *precision* churn 0,322, *recall* churn 0,483, F1 churn 0,387, dan ROC-AUC 0,733 pada data uji. Model menangkap 69 dari 143 pelanggan churn, tetapi juga menghasilkan 145 alarm palsu. Dashboard Streamlit menggabungkan eksplorasi data, indikator BI, skor prediksi, pengaturan ambang keputusan, dan LLM lokal untuk menerjemahkan bukti menjadi saran retensi. LLM hanya menerima profil pelanggan, transaksi terbaru, skor ML, dan faktor global model sehingga rekomendasinya dapat ditelusuri. Proyek ini adalah reproduksi implementasi referensi; hasilnya menunjukkan kelayakan alur end-to-end untuk pembelajaran, tetapi belum cukup sebagai dasar otomatisasi keputusan bisnis.
+
+**Kata kunci:** customer churn; business intelligence; Random Forest; LLM grounded; Streamlit.
+
+# Pendahuluan
+
+## Masalah dan tujuan
+
+Retensi pelanggan membutuhkan prioritas: tim bisnis tidak dapat memperlakukan seluruh pelanggan dengan cara yang sama. Sistem ini membantu manajer mengenali pelanggan yang perlu ditinjau lebih dahulu dan merangkum bukti yang relevan bagi tindakan retensi. Tujuan proyek adalah membangun dan mengevaluasi alur dari data CSV ke BI, prediksi churn, interpretasi LLM, lalu antarmuka aplikasi.
+
+## Pertanyaan rekayasa
+
+1. Seberapa baik Random Forest membedakan pelanggan churn dari non-churn pada data uji?
+2. Bukti data apa yang paling berpengaruh secara global terhadap prediksi?
+3. Bagaimana skor prediksi dan bukti mentah dapat disajikan agar tetap dapat diperiksa pengguna?
+
+## Kontribusi dan batas orisinalitas
+
+**Track: REPRODUCE.** Kontribusi proyek ini adalah menjalankan, memeriksa, dan mendokumentasikan pipeline referensi secara utuh. Tidak ada klaim bahwa dataset, arsitektur, atau model merupakan karya orisinal. Nilai pembelajarannya terletak pada keterhubungan BI--ML--LLM, pencegahan kebocoran pada *pipeline*, dan pemeriksaan semantik agregat.
+
+# Data
+
+## Provenance dan struktur
+
+Dataset e-commerce bergaya Kaggle disimpan secara lokal dalam empat CSV. Snapshot data yang dipakai pipeline adalah 1 April 2026. Sumber rinci, lisensi, dan pemilik data tidak tercatat dalam repository; karena itu data hanya diperlakukan sebagai data pembelajaran dan tidak boleh diasumsikan layak untuk penggunaan produksi.
+
+| Tabel | Unit observasi | Jumlah baris | Peran |
+|---|---:|---:|---|
+| `customers.csv` | pelanggan | 8.000 | sumber fitur dan target `churned` |
+| `orders.csv` | transaksi | 25.000 | bukti transaksi dan analisis return |
+| `product_summary.csv` | produk | 140 | BI agregat per produk |
+| `monthly_revenue.csv` | bulan | 75 | BI tren pendapatan |
+
+Target `churned` adalah label biner pada tingkat pelanggan. Tingkat churn observasi adalah 8,94%, sehingga akurasi saja tidak cukup untuk menilai model.
+
+## Kualitas data dan semantik
+
+Sebanyak 63,0% nilai penilaian pelanggan pada transaksi kosong. Nilai tersebut tidak digunakan sebagai fitur pelanggan pada model. Tingkat transaksi return adalah 8,08%. Validasi pipeline mengonfirmasi bahwa ringkasan produk sesuai dengan pendapatan transaksi non-cancelled, sedangkan ringkasan bulanan sesuai dengan pendapatan transaksi delivered.
+
+Temuan penting adalah `monthly_revenue.return_rate` selalu nol. Hal ini bukan bukti bahwa tidak ada return, melainkan konsekuensi tabel bulanan yang hanya mengagregasi transaksi delivered. Analisis return harus menggunakan `orders.csv`. Pemeriksaan ini mencegah kesimpulan BI yang keliru sebelum modeling.
+
+## Privasi, bias, dan penggunaan
+
+Tabel pelanggan memuat usia, gender, negara, serta perilaku belanja. Atribut tersebut dapat berkorelasi dengan kelompok yang dilindungi atau menciptakan perlakuan berbeda. Sistem tidak boleh dipakai untuk menolak layanan, menentukan harga, atau mengambil keputusan otomatis. Sebelum implementasi nyata diperlukan verifikasi izin data, minimisasi atribut, evaluasi fairness per kelompok, kontrol akses, dan peninjauan manusia.
+
+# Metode
+
+## Arsitektur
+
+```text
+CSV pelanggan/transaksi → validasi dan pembersihan → rekayasa fitur
+                                              ├→ dashboard BI
+                                              └→ pipeline ML → probabilitas churn
+                                                                    ├→ tampilan keputusan
+                                                                    └→ bukti terbatas → LLM → saran retensi
+```
+
+Dashboard Streamlit menampilkan empat lapisan: data, BI, prediksi ML, dan LLM analyst. Pengguna dapat memilih pelanggan dan mengubah ambang keputusan dari 0,10 sampai 0,90. Probabilitas ditampilkan sebagai prediksi, bukan kepastian atau sebab perilaku pelanggan.
+
+## Persiapan data dan fitur
+
+`registration_date` dikonversi ke tanggal. Dari tanggal snapshot dihitung `customer_tenure_days`. Tiga fitur turunan ditambahkan: `orders_per_year`, `reviews_per_order`, dan `returns_per_order`. Pembagi pesanan nol ditangani sebelum rasio dihitung. Model memakai 21 fitur sebelum *one-hot encoding*: 7 kategorikal dan 14 numerik.
+
+Data dibagi 80:20 secara *stratified* dengan `random_state=42`, menghasilkan 6.400 data latih dan 1.600 data uji. Imputasi median dilakukan untuk numerik dan modus untuk kategorikal di dalam *scikit-learn Pipeline*. Dengan demikian statistik imputasi dan encoding dipelajari dari data latih, bukan dari data uji.
+
+## Model dan evaluasi
+
+Model utama adalah `RandomForestClassifier` dengan 350 pohon, `min_samples_leaf=3`, `class_weight="balanced"`, dan seed 42. Pembobotan kelas dipilih karena churn merupakan kelas minoritas. Metrik utama meliputi *precision*, *recall*, dan F1 pada kelas churn serta ROC-AUC. Metrik-metrik ini lebih informatif daripada akurasi ketika konsekuensi false positive dan false negative berbeda.
+
+## Integrasi LLM
+
+LLM lokal Ollama (`llama3.2` secara default) menerima profil pelanggan terpilih, probabilitas churn, hingga lima transaksi terbaru, dan delapan faktor global model. Prompt melarang penambahan fakta, motif, keluhan, pendapatan, atau perilaku masa depan. Keluaran diminta dalam bahasa Indonesia: interpretasi skor, dua observasi berbasis bukti, dua tindakan proporsional, dan satu peringatan keterbatasan. Suhu pemanggilan diatur 0,2. LLM digunakan sebagai bantuan komunikasi, bukan sebagai model prediktif atau pengambil keputusan.
+
+# Hasil
+
+## Kinerja machine learning
+
+| Metrik data uji | Nilai |
+|---|---:|
+| Akurasi | 0,863 |
+| Precision churn | 0,322 |
+| Recall churn | 0,483 |
+| F1 churn | 0,387 |
+| ROC-AUC | 0,733 |
+| Proporsi churn data uji | 0,089 |
+
+Confusion matrix pada ambang 0,50 adalah sebagai berikut.
+
+| Aktual \ Prediksi | Non-churn | Churn |
+|---|---:|---:|
+| Non-churn | 1.312 | 145 |
+| Churn | 74 | 69 |
+
+Model menemukan 69 dari 143 churn aktual (recall 48,3%), tetapi hanya sekitar satu dari tiga alarm churn yang benar (precision 32,2%). Sebagai pembanding konseptual, prediktor yang selalu memilih non-churn akan memiliki akurasi sekitar 91,1% pada data uji, namun recall churn nol. Ini menjelaskan mengapa akurasi 86,3% tidak boleh dibaca sebagai keunggulan model tanpa metrik kelas minoritas.
+
+## Faktor global model
+
+Lima faktor paling penting adalah `days_since_last_purchase` (0,147), `total_orders` (0,089), `total_spend_usd` (0,077), `orders_per_year` (0,072), dan `customer_tenure_days` (0,062). Importance tersebut bersifat global dan asosiatif: ia tidak membuktikan bahwa satu fitur menyebabkan churn pada pelanggan tertentu.
+
+## Analisis error dan ambang
+
+Terdapat 145 false positive dan 74 false negative pada ambang 0,50. False positive dapat menyebabkan sumber daya retensi terbuang, sementara false negative dapat membuat pelanggan berisiko luput dari tindak lanjut. Ambang di dashboard sengaja dapat diubah agar manajer menyesuaikan trade-off tersebut dengan kapasitas program retensi dan biaya kontak pelanggan. Repository tidak menyediakan eksperimen numerik untuk beberapa ambang; keputusan ambang produksi karena itu belum dapat direkomendasikan.
+
+## Evaluasi LLM
+
+Implementasi menyediakan mekanisme grounding dan prompt yang dapat ditinjau, tetapi tidak menyertakan kumpulan hasil LLM atau anotasi evaluasi formal. Karena itu, laporan ini tidak mengklaim tingkat konsistensi faktual LLM. Sebelum deployment, perlu dibuat set kasus uji dan dinilai minimal untuk: kesesuaian dengan evidence, klaim tanpa dukungan, relevansi tindakan, dan kepatuhan pada peringatan keterbatasan.
+
+# Diskusi
+
+Sistem berhasil menunjukkan alur teknis yang koheren: BI menjelaskan keadaan agregat, ML memberi skor risiko, lalu LLM menerjemahkan bukti yang dibatasi untuk pengguna bisnis. ROC-AUC 0,733 menunjukkan kemampuan pemeringkatan yang moderat; tetapi precision 0,322 berarti tindak lanjut perlu diprioritaskan dan diperiksa manusia. Faktor recency dan intensitas transaksi dominan, namun harus diperlakukan sebagai sinyal prediktif, bukan penjelasan kausal.
+
+Nilai tambah LLM adalah menyatukan skor dan fakta dalam bahasa kerja manajer. Risikonya adalah keluaran yang terdengar meyakinkan meskipun tidak didukung data. Pembatasan prompt, tampilan prompt di dashboard, dan evidence terstruktur adalah mitigasi awal, bukan jaminan keselamatan.
+
+# Teknologi Cerdas sebagai Artefak Rekayasa
+
+| Elemen | Implementasi dan bukti |
+|---|---|
+| Kebutuhan | Memprioritaskan pelanggan untuk tindak lanjut retensi |
+| Fungsi | Menampilkan BI, menghitung risiko churn, dan memberi ringkasan berbasis bukti |
+| Arsitektur | CSV → preprocessing → Random Forest → Streamlit/Ollama |
+| Konstruksi | `data_prep.py`, `ml_model.py`, `vai_analyst.py`, dan `app.py` |
+| Verifikasi | Validasi schema, split stratified, metrik uji, confusion matrix, serta prompt yang dapat dilihat |
+
+# Keterbatasan dan penggunaan bertanggung jawab
+
+Keterbatasan utama adalah provenance dan lisensi dataset tidak terdokumentasi secara lengkap, evaluasi hanya memakai satu split, dan tidak ada pengujian *data drift*, kalibrasi probabilitas, fairness, atau pengguna nyata. Label churn historis juga tidak membuktikan mekanisme penyebab. LLM belum dievaluasi secara sistematis. Sistem harus diposisikan sebagai alat pendukung keputusan dengan audit log dan pilihan override manusia; bukan alat otomatis untuk menghubungi, menghukum, atau mengecualikan pelanggan.
+
+# Kesimpulan
+
+1. Pipeline menghasilkan model churn dengan ROC-AUC 0,733 dan recall churn 0,483 pada 1.600 data uji.
+2. Performa kelas minoritas menuntut evaluasi lebih dari akurasi; pada ambang 0,50 terdapat 145 false positive dan 74 false negative.
+3. Recency pembelian dan intensitas transaksi merupakan faktor global terpenting pada model ini.
+4. Dashboard dan LLM grounded membuat skor serta evidence dapat diperiksa, tetapi LLM belum memiliki evaluasi formal.
+5. Artefak ini sesuai sebagai reproduksi pembelajaran end-to-end dan memerlukan validasi data, eksperimen ambang, evaluasi fairness, serta studi pengguna sebelum penggunaan operasional.
+
+# Reproduksibilitas
+
+Repository commit yang didokumentasikan saat laporan disusun: `0c00da005d1683ce1c93f077038252bf907d31d8` (14 September 2026). Jalankan dari folder `simulation`:
+
+```{.bash}
+pip install -r requirements.txt
+python data_prep.py
+python ml_model.py
+streamlit run app.py
+```
+
+Untuk LLM, jalankan `ollama serve`, pastikan model `llama3.2` tersedia, lalu gunakan `python vai_analyst.py` atau tab LLM di aplikasi.
+
+# Pengungkapan penggunaan AI
+
+| Aktivitas | Tool/Model | Penggunaan | Verifikasi |
+|---|---|---|---|
+| Penulisan laporan | Codex (GPT-5) | Penyusunan draf dari artefak repository | Angka dan klaim diperiksa terhadap JSON/CSV serta kode lokal |
+| Model bahasa aplikasi | Ollama `llama3.2` | Ringkasan saran retensi grounded | Prompt dan evidence ditampilkan di dashboard |
+
