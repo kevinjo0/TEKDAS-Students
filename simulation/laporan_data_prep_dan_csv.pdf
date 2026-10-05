@@ -1,0 +1,152 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 3270 >>
+stream
+BT
+/F1 10 Tf
+50 792 Td
+13 TL
+(Ruang lingkup: simulation/data_prep.py serta customer_ml_dataset.csv, customer_train.csv, dan) Tj
+T*
+(customer_test.csv.) Tj
+T*
+() Tj
+T*
+(1. Tujuan) Tj
+T*
+(Skrip data_prep.py menyiapkan data e-commerce untuk latihan machine learning klasifikasi customer) Tj
+T*
+(churn. Alurnya adalah membaca data sumber, memvalidasi struktur, membersihkan serta merekayasa fitur,) Tj
+T*
+(membagi data train/test, lalu menghasilkan laporan kualitas data.) Tj
+T*
+() Tj
+T*
+(2. Data sumber dan validasi) Tj
+T*
+(Skrip membaca customers.csv, orders.csv, product_summary.csv, dan monthly_revenue.csv dari folder) Tj
+T*
+(simulation. Fungsi validate_sources memastikan setiap file memiliki kolom penting, sehingga kesalahan) Tj
+T*
+(memilih dataset diketahui sejak awal.) Tj
+T*
+() Tj
+T*
+(3. Penyiapan fitur pelanggan) Tj
+T*
+(Tabel customers menjadi basis dataset model. Kolom kategorikal dipertahankan sebagai teks agar) Tj
+T*
+(encoding dapat dilakukan kemudian di pipeline machine learning tanpa kebocoran data train/test.) Tj
+T*
+(Fitur kategorikal: country, gender, membership_tier, preferred_category, preferred_device,) Tj
+T*
+(preferred_payment_method, dan acquisition_channel.) Tj
+T*
+(Fitur numerik awal: age, total_orders, total_spend_usd, avg_order_value_usd, days_since_last_purchase,) Tj
+T*
+(reviews_given, avg_review_score, returns_made, wishlist_items, serta newsletter_subscribed.) Tj
+T*
+() Tj
+T*
+(4. Rekayasa fitur) Tj
+T*
+(Snapshot data ditetapkan sebagai tanggal paling akhir dari orders dan customers, yaitu 1 April 2026.) Tj
+T*
+(Dari sini dibuat customer_tenure_days, orders_per_year, reviews_per_order, dan returns_per_order.) Tj
+T*
+(Pembagi jumlah pesanan nol ditangani sehingga rasio ulasan/retur menjadi 0, bukan nilai tak) Tj
+T*
+(terdefinisi.) Tj
+T*
+(Target churned dikonversi menjadi integer biner: 0 berarti pelanggan tidak churn dan 1 berarti churn.) Tj
+T*
+() Tj
+T*
+(5. Pembagian data dan keluaran) Tj
+T*
+(Dataset akhir dibagi secara stratified menjadi 80% train dan 20% test, dengan random_state=42.) Tj
+T*
+(Stratifikasi menjaga proporsi kelas churn di kedua subset.) Tj
+T*
+(customer_ml_dataset.csv berisi seluruh 8.000 pelanggan siap-model. customer_train.csv berisi 6.400) Tj
+T*
+(baris untuk pelatihan. customer_test.csv berisi 1.600 baris untuk evaluasi. Ketiganya memiliki 23) Tj
+T*
+(kolom: customer_id, 21 fitur sebelum one-hot encoding, dan target churned.) Tj
+T*
+() Tj
+T*
+(6. Contoh isi) Tj
+T*
+(Satu baris mewakili satu pelanggan. Contoh C00001: pelanggan Amerika Serikat, laki-laki, tier Free, 4) Tj
+T*
+(pesanan, total belanja USD 286,63, tenure 2.631 hari, dan churned=0. Artinya pelanggan tersebut tidak) Tj
+T*
+(churn.) Tj
+T*
+() Tj
+T*
+(7. Kualitas data) Tj
+T*
+(Laporan data_quality_report.json mencatat 8.000 pelanggan, 25.000 pesanan, 140 ringkasan produk, dan) Tj
+T*
+(75 ringkasan bulanan. Tingkat churn pelanggan adalah 8,94%; tingkat retur pesanan 8,08%; dan 63,0%) Tj
+T*
+(pesanan tidak memiliki rating pelanggan.) Tj
+T*
+(Pendapatan product_summary sesuai dengan pesanan non-cancelled, sedangkan monthly_revenue sesuai) Tj
+T*
+(dengan pesanan berstatus Delivered. Karena ringkasan bulanan hanya menggunakan pesanan terkirim,) Tj
+T*
+(return_rate di sana selalu nol; analisis retur sebaiknya memakai orders.csv.) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 317 >>
+stream
+BT
+/F1 10 Tf
+50 792 Td
+13 TL
+(8. Kesimpulan) Tj
+T*
+(data_prep.py menghasilkan dataset yang konsisten dan siap digunakan pada pipeline klasifikasi churn.) Tj
+T*
+(ID pelanggan sengaja dipertahankan agar setiap baris dapat ditelusuri ke data sumber, tetapi ID tidak) Tj
+T*
+(boleh digunakan sebagai fitur model.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000302 00000 n 
+0000003624 00000 n 
+0000003799 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+4167
+%%EOF

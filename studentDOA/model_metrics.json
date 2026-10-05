@@ -1,0 +1,28 @@
+{
+  "accuracy": 0.7491525423728813,
+  "precision_macro": 0.7097140682520547,
+  "recall_macro": 0.712352331926045,
+  "f1_macro": 0.7058927248240837,
+  "classes": [
+    "Dropout",
+    "Enrolled",
+    "Graduate"
+  ],
+  "confusion_matrix": [
+    [
+      199,
+      60,
+      25
+    ],
+    [
+      24,
+      96,
+      39
+    ],
+    [
+      19,
+      55,
+      368
+    ]
+  ]
+}
